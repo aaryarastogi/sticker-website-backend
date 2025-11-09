@@ -1,8 +1,10 @@
 package com.stickers.controller;
 
 import com.stickers.dto.CustomStickerRequest;
+import com.stickers.dto.StickerWithLikesDto;
 import com.stickers.entity.UserCreatedSticker;
 import com.stickers.service.CustomStickerService;
+import com.stickers.util.JwtUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -18,6 +20,21 @@ import java.util.Map;
 public class CustomStickerController {
     @Autowired
     private CustomStickerService stickerService;
+    
+    @Autowired
+    private JwtUtil jwtUtil;
+    
+    private Integer getUserIdFromAuthHeader(String authHeader) {
+        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+            return null;
+        }
+        try {
+            String token = authHeader.substring(7);
+            return jwtUtil.getUserIdFromToken(token);
+        } catch (Exception e) {
+            return null;
+        }
+    }
     
     @PostMapping
     public ResponseEntity<?> createSticker(@RequestBody CustomStickerRequest request) {
@@ -37,9 +54,11 @@ public class CustomStickerController {
     }
     
     @GetMapping("/published")
-    public ResponseEntity<?> getPublishedStickers() {
+    public ResponseEntity<?> getPublishedStickers(
+            @RequestHeader(value = "Authorization", required = false) String authHeader) {
         try {
-            List<UserCreatedSticker> stickers = stickerService.getPublishedStickers();
+            Integer userId = getUserIdFromAuthHeader(authHeader);
+            List<StickerWithLikesDto> stickers = stickerService.getPublishedStickersWithLikes(userId);
             return ResponseEntity.ok(stickers);
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
@@ -48,9 +67,12 @@ public class CustomStickerController {
     }
     
     @GetMapping("/my-stickers/{userId}")
-    public ResponseEntity<?> getMyStickers(@PathVariable Integer userId) {
+    public ResponseEntity<?> getMyStickers(
+            @PathVariable Integer userId,
+            @RequestHeader(value = "Authorization", required = false) String authHeader) {
         try {
-            List<UserCreatedSticker> stickers = stickerService.getUserStickers(userId);
+            Integer currentUserId = getUserIdFromAuthHeader(authHeader);
+            List<StickerWithLikesDto> stickers = stickerService.getUserStickersWithLikes(userId, currentUserId);
             return ResponseEntity.ok(stickers);
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)

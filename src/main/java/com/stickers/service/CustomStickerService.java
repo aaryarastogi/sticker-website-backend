@@ -1,18 +1,24 @@
 package com.stickers.service;
 
 import com.stickers.dto.CustomStickerRequest;
+import com.stickers.dto.StickerWithLikesDto;
 import com.stickers.entity.UserCreatedSticker;
 import com.stickers.repository.UserCreatedStickerRepository;
+import com.stickers.repository.StickerLikeRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Service
 public class CustomStickerService {
     @Autowired
     private UserCreatedStickerRepository stickerRepository;
+    
+    @Autowired
+    private StickerLikeRepository likeRepository;
     
     @Transactional
     public UserCreatedSticker createSticker(CustomStickerRequest request) {
@@ -32,8 +38,30 @@ public class CustomStickerService {
         return stickerRepository.findByIsPublishedTrue();
     }
     
+    public List<StickerWithLikesDto> getPublishedStickersWithLikes(Integer userId) {
+        List<UserCreatedSticker> stickers = stickerRepository.findByIsPublishedTrue();
+        return stickers.stream()
+            .map(sticker -> {
+                Long likeCount = likeRepository.countByStickerIdAndStickerType(sticker.getId(), "user_created");
+                Boolean isLiked = userId != null && likeRepository.existsByUserIdAndStickerIdAndStickerType(userId, sticker.getId(), "user_created");
+                return StickerWithLikesDto.fromEntity(sticker, likeCount, isLiked);
+            })
+            .collect(Collectors.toList());
+    }
+    
     public List<UserCreatedSticker> getUserStickers(Integer userId) {
         return stickerRepository.findByUserId(userId);
+    }
+    
+    public List<StickerWithLikesDto> getUserStickersWithLikes(Integer userId, Integer currentUserId) {
+        List<UserCreatedSticker> stickers = stickerRepository.findByUserId(userId);
+        return stickers.stream()
+            .map(sticker -> {
+                Long likeCount = likeRepository.countByStickerIdAndStickerType(sticker.getId(), "user_created");
+                Boolean isLiked = currentUserId != null && likeRepository.existsByUserIdAndStickerIdAndStickerType(currentUserId, sticker.getId(), "user_created");
+                return StickerWithLikesDto.fromEntity(sticker, likeCount, isLiked);
+            })
+            .collect(Collectors.toList());
     }
     
     @Transactional

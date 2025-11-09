@@ -4,6 +4,7 @@ import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.JsonNode;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
@@ -21,6 +22,7 @@ public class UserCreatedSticker {
     private Integer id;
     
     @Column(name = "user_id", nullable = false)
+    @JsonProperty("user_id")
     private Integer userId;
     
     @Column(nullable = false)
@@ -30,6 +32,7 @@ public class UserCreatedSticker {
     private String category;
     
     @Column(name = "image_url", nullable = false, columnDefinition = "TEXT")
+    @JsonProperty("image_url")
     private String imageUrl;
     
     @Column(columnDefinition = "jsonb")
@@ -40,12 +43,15 @@ public class UserCreatedSticker {
     private BigDecimal price;
     
     @Column(name = "is_published")
+    @JsonProperty("is_published")
     private Boolean isPublished = false;
     
     @Column(name = "created_at")
+    @JsonProperty("created_at")
     private LocalDateTime createdAt;
     
     @Column(name = "updated_at")
+    @JsonProperty("updated_at")
     private LocalDateTime updatedAt;
     
     @PrePersist

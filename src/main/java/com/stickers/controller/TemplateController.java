@@ -37,15 +37,18 @@ public class TemplateController {
                 Map<String, Object> empty = new HashMap<>();
                 empty.put("stickers", List.of());
                 empty.put("templates", List.of());
+                empty.put("users", List.of());
                 return ResponseEntity.ok(empty);
             }
             
             List<StickerDto> stickers = templateService.searchStickers(q);
             List<TemplateDto> templates = templateService.searchTemplates(q);
+            List<com.stickers.dto.UserSearchDto> users = templateService.searchUsers(q);
             
             Map<String, Object> result = new HashMap<>();
             result.put("stickers", stickers);
             result.put("templates", templates);
+            result.put("users", users);
             
             return ResponseEntity.ok(result);
         } catch (Exception e) {
@@ -66,15 +69,17 @@ public class TemplateController {
     }
     
     @GetMapping("/{identifier}/stickers")
-    public ResponseEntity<List<StickerDto>> getStickersByTemplate(@PathVariable String identifier) {
+    public ResponseEntity<List<StickerDto>> getStickersByTemplate(
+            @PathVariable String identifier,
+            @RequestHeader(value = "Authorization", required = false) String authHeader) {
         try {
             List<StickerDto> stickers;
             if (identifier.matches("\\d+")) {
                 // Numeric ID
-                stickers = templateService.getStickersByTemplate(Integer.parseInt(identifier));
+                stickers = templateService.getStickersByTemplate(Integer.parseInt(identifier), authHeader);
             } else {
                 // Template title (URL decoded automatically)
-                stickers = templateService.getStickersByTemplateTitle(identifier);
+                stickers = templateService.getStickersByTemplateTitle(identifier, authHeader);
             }
             return ResponseEntity.ok(stickers);
         } catch (Exception e) {
@@ -88,6 +93,17 @@ public class TemplateController {
             return templateService.getTemplateById(id)
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
+        } catch (Exception e) {
+            return ResponseEntity.status(500).build();
+        }
+    }
+    
+    @GetMapping("/trending/stickers")
+    public ResponseEntity<List<StickerDto>> getTrendingStickers(
+            @RequestHeader(value = "Authorization", required = false) String authHeader) {
+        try {
+            List<StickerDto> stickers = templateService.getTrendingStickers(authHeader);
+            return ResponseEntity.ok(stickers);
         } catch (Exception e) {
             return ResponseEntity.status(500).build();
         }

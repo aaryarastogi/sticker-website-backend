@@ -9,6 +9,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import java.util.Random;
 
 @Service
 public class AuthService {
@@ -31,8 +32,18 @@ public class AuthService {
             throw new IllegalArgumentException("User with this email already exists");
         }
         
+        // Generate username: firstname_randomnumber
+        String firstName = request.getName().split(" ")[0].toLowerCase();
+        String username;
+        Random random = new Random();
+        do {
+            int randomNumber = 1000 + random.nextInt(9000); // 4-digit random number (1000-9999)
+            username = firstName + "_" + randomNumber;
+        } while (userRepository.existsByUsername(username));
+        
         User user = new User();
         user.setName(request.getName());
+        user.setUsername(username);
         user.setEmail(request.getEmail().toLowerCase());
         user.setPassword(passwordEncoder.encode(request.getPassword()));
         
@@ -43,7 +54,9 @@ public class AuthService {
         AuthResponse.UserDto userDto = new AuthResponse.UserDto(
             user.getId(),
             user.getName(),
-            user.getEmail()
+            user.getUsername(),
+            user.getEmail(),
+            user.getProfileImageUrl()
         );
         
         return new AuthResponse("User created successfully", token, userDto);
@@ -62,7 +75,9 @@ public class AuthService {
         AuthResponse.UserDto userDto = new AuthResponse.UserDto(
             user.getId(),
             user.getName(),
-            user.getEmail()
+            user.getUsername(),
+            user.getEmail(),
+            user.getProfileImageUrl()
         );
         
         return new AuthResponse("Login successful", token, userDto);
@@ -80,7 +95,9 @@ public class AuthService {
         return new AuthResponse.UserDto(
             user.getId(),
             user.getName(),
-            user.getEmail()
+            user.getUsername(),
+            user.getEmail(),
+            user.getProfileImageUrl()
         );
     }
 }

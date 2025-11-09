@@ -8,6 +8,7 @@ import java.util.List;
 
 @Repository
 public interface UserCreatedStickerRepository extends JpaRepository<UserCreatedSticker, Integer> {
+    long countByUserId(Integer userId);
     List<UserCreatedSticker> findByUserId(Integer userId);
     List<UserCreatedSticker> findByIsPublishedTrue();
     @Query("SELECT ucs FROM UserCreatedSticker ucs WHERE ucs.userId = :userId AND ucs.id = :id")

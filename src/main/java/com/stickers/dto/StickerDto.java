@@ -18,5 +18,23 @@ public class StickerDto {
     private List<String> finishes;
     private BigDecimal price;
     private String template_title;
+    private String sticker_type; // "template" or "user_created"
+    private Long like_count;
+    private Boolean is_liked;
+    
+    // Constructor without like fields for backward compatibility
+    public StickerDto(Integer id, Integer template_id, String name, String image_url, 
+                     List<String> colors, List<String> finishes, BigDecimal price, String template_title) {
+        this.id = id;
+        this.template_id = template_id;
+        this.name = name;
+        this.image_url = image_url;
+        this.colors = colors;
+        this.finishes = finishes;
+        this.price = price;
+        this.template_title = template_title;
+        this.like_count = 0L;
+        this.is_liked = false;
+    }
 }
 

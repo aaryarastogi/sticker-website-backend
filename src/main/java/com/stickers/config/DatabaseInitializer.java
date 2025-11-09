@@ -3,9 +3,11 @@ package com.stickers.config;
 import com.stickers.entity.Category;
 import com.stickers.entity.Sticker;
 import com.stickers.entity.Template;
+import com.stickers.entity.User;
 import com.stickers.repository.CategoryRepository;
 import com.stickers.repository.StickerRepository;
 import com.stickers.repository.TemplateRepository;
+import com.stickers.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.stereotype.Component;
@@ -28,9 +30,15 @@ public class DatabaseInitializer implements CommandLineRunner {
     @Autowired
     private StickerRepository stickerRepository;
     
+    @Autowired
+    private UserRepository userRepository;
+    
     @Override
     @Transactional
     public void run(String... args) {
+        // Generate usernames for existing users without username
+        generateUsernamesForExistingUsers();
+        
         if (categoryRepository.count() == 0) {
             seedCategories();
         }
@@ -41,6 +49,33 @@ public class DatabaseInitializer implements CommandLineRunner {
             seedStickers();
         } else {
             updateExistingStickersWithFinishes();
+        }
+    }
+    
+    private void generateUsernamesForExistingUsers() {
+        List<User> users = userRepository.findAll();
+        Random random = new Random();
+        
+        for (User user : users) {
+            if (user.getUsername() == null || user.getUsername().isEmpty()) {
+                String firstName = user.getName().split(" ")[0].toLowerCase();
+                String username;
+                int attempts = 0;
+                do {
+                    int randomNumber = 1000 + random.nextInt(9000); // 4-digit random number (1000-9999)
+                    username = firstName + "_" + randomNumber;
+                    attempts++;
+                    // Prevent infinite loop
+                    if (attempts > 100) {
+                        // If too many attempts, add timestamp to make it unique
+                        username = firstName + "_" + System.currentTimeMillis() % 10000;
+                        break;
+                    }
+                } while (userRepository.existsByUsername(username));
+                
+                user.setUsername(username);
+                userRepository.save(user);
+            }
         }
     }
     

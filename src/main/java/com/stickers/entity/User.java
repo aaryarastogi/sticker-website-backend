@@ -19,6 +19,12 @@ public class User {
     @Column(nullable = false)
     private String name;
     
+    @Column(unique = true)
+    private String username;
+    
+    @Column(name = "profile_image_url", columnDefinition = "TEXT")
+    private String profileImageUrl;
+    
     @Column(unique = true, nullable = false)
     private String email;
     

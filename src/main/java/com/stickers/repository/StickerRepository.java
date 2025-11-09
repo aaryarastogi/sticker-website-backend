@@ -10,6 +10,7 @@ import java.util.List;
 @Repository
 public interface StickerRepository extends JpaRepository<Sticker, Integer> {
     List<Sticker> findByTemplateId(Integer templateId);
+    List<Sticker> findByTemplateIdIn(List<Integer> templateIds);
     @Query("SELECT s FROM Sticker s WHERE s.templateId IN " +
            "(SELECT t.id FROM Template t WHERE LOWER(t.title) = LOWER(:title))")
     List<Sticker> findByTemplateTitle(@Param("title") String title);
