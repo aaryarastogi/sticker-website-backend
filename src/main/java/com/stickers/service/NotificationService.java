@@ -27,6 +27,19 @@ public class NotificationService {
     }
     
     @Transactional
+    public Notification createNotification(Integer userId, Integer fromUserId, Integer stickerId, String type, String message) {
+        Notification notification = new Notification();
+        notification.setUserId(userId);
+        // Use 0 for admin/system actions (fromUserId is null)
+        notification.setFromUserId(fromUserId != null ? fromUserId : 0);
+        notification.setStickerId(stickerId);
+        notification.setType(type);
+        notification.setMessage(message != null ? message : "");
+        notification.setIsRead(false);
+        return notificationRepository.save(notification);
+    }
+    
+    @Transactional
     public void markAsRead(Integer notificationId, Integer userId) {
         Notification notification = notificationRepository.findById(notificationId)
             .orElseThrow(() -> new IllegalArgumentException("Notification not found"));
@@ -46,6 +59,18 @@ public class NotificationService {
             notification.setIsRead(true);
         }
         notificationRepository.saveAll(notifications);
+    }
+
+    public List<Notification> getNotificationsByStickerId(Integer stickerId) {
+        return notificationRepository.findByStickerId(stickerId);
+    }
+
+    @Transactional
+    public void deleteNotifications(List<Notification> notifications) {
+        if (notifications == null || notifications.isEmpty()) {
+            return;
+        }
+        notificationRepository.deleteAll(notifications);
     }
 }
 

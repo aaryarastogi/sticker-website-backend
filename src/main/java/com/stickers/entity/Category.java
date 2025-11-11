@@ -19,12 +19,27 @@ public class Category {
     @Column(unique = true, nullable = false)
     private String name;
     
+    @Column(name = "image_url", columnDefinition = "TEXT")
+    private String imageUrl;
+    
+    @Column(name = "is_published", nullable = false)
+    private Boolean isPublished = false;
+    
     @Column(name = "created_at")
     private LocalDateTime createdAt;
+    
+    @Column(name = "updated_at")
+    private LocalDateTime updatedAt;
     
     @PrePersist
     protected void onCreate() {
         createdAt = LocalDateTime.now();
+        updatedAt = LocalDateTime.now();
+    }
+    
+    @PreUpdate
+    protected void onUpdate() {
+        updatedAt = LocalDateTime.now();
     }
 }
 

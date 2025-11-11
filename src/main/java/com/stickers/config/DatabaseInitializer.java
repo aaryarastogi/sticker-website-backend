@@ -10,6 +10,7 @@ import com.stickers.repository.TemplateRepository;
 import com.stickers.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -33,9 +34,15 @@ public class DatabaseInitializer implements CommandLineRunner {
     @Autowired
     private UserRepository userRepository;
     
+    @Autowired
+    private JdbcTemplate jdbcTemplate;
+    
     @Override
     @Transactional
     public void run(String... args) {
+        // Ensure custom sticker table has required columns
+        ensureUserCreatedStickerSchema();
+        
         // Generate usernames for existing users without username
         generateUsernamesForExistingUsers();
         
@@ -50,6 +57,19 @@ public class DatabaseInitializer implements CommandLineRunner {
         } else {
             updateExistingStickersWithFinishes();
         }
+    }
+    
+    private void ensureUserCreatedStickerSchema() {
+        jdbcTemplate.execute("ALTER TABLE user_created_stickers ADD COLUMN IF NOT EXISTS status VARCHAR(50) DEFAULT 'PENDING'");
+        jdbcTemplate.execute("ALTER TABLE user_created_stickers ADD COLUMN IF NOT EXISTS admin_note TEXT");
+        jdbcTemplate.execute("ALTER TABLE user_created_stickers ADD COLUMN IF NOT EXISTS is_published BOOLEAN DEFAULT FALSE");
+        jdbcTemplate.execute("ALTER TABLE user_created_stickers ALTER COLUMN status SET DEFAULT 'PENDING'");
+        jdbcTemplate.execute("UPDATE user_created_stickers SET status = COALESCE(status, 'PENDING')");
+        jdbcTemplate.execute("UPDATE user_created_stickers SET is_published = COALESCE(is_published, FALSE)");
+        
+        // Add is_published to template stickers table
+        jdbcTemplate.execute("ALTER TABLE stickers ADD COLUMN IF NOT EXISTS is_published BOOLEAN DEFAULT TRUE");
+        jdbcTemplate.execute("UPDATE stickers SET is_published = COALESCE(is_published, TRUE)");
     }
     
     private void generateUsernamesForExistingUsers() {

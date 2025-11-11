@@ -38,6 +38,9 @@ public class Sticker {
     @Column(columnDefinition = "DECIMAL(10, 2)")
     private BigDecimal price;
     
+    @Column(name = "is_published")
+    private Boolean isPublished = true;
+    
     @Column(name = "created_at")
     private LocalDateTime createdAt;
     

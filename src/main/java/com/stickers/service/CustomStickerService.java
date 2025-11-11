@@ -29,7 +29,9 @@ public class CustomStickerService {
         sticker.setImageUrl(request.getImage_url());
         sticker.setSpecifications(request.getSpecifications());
         sticker.setPrice(request.getPrice() != null ? request.getPrice() : java.math.BigDecimal.ZERO);
-        sticker.setIsPublished(request.getIs_published() != null ? request.getIs_published() : false);
+        sticker.setIsPublished(false);
+        sticker.setStatus("PENDING");
+        sticker.setAdminNote(null);
         
         return stickerRepository.save(sticker);
     }
@@ -65,6 +67,27 @@ public class CustomStickerService {
     }
     
     @Transactional
+    public UserCreatedSticker reviewSticker(Integer id, String status, String adminNote) {
+        UserCreatedSticker sticker = stickerRepository.findById(id)
+            .orElseThrow(() -> new IllegalArgumentException("Sticker not found"));
+        
+        if (status == null || status.trim().isEmpty()) {
+            throw new IllegalArgumentException("Status is required");
+        }
+        
+        String normalizedStatus = status.trim().toUpperCase();
+        if (!normalizedStatus.equals("APPROVED") && !normalizedStatus.equals("REJECTED")) {
+            throw new IllegalArgumentException("Invalid status. Allowed values are APPROVED or REJECTED");
+        }
+        
+        sticker.setStatus(normalizedStatus);
+        sticker.setIsPublished(normalizedStatus.equals("APPROVED"));
+        sticker.setAdminNote(adminNote != null && !adminNote.trim().isEmpty() ? adminNote.trim() : null);
+        
+        return stickerRepository.save(sticker);
+    }
+    
+    @Transactional
     public void deleteSticker(Integer id, Integer userId) {
         UserCreatedSticker sticker = stickerRepository.findById(id)
             .orElseThrow(() -> new IllegalArgumentException("Sticker not found"));
@@ -85,7 +108,12 @@ public class CustomStickerService {
             throw new IllegalArgumentException("Not authorized to update this sticker");
         }
         
-        sticker.setIsPublished(isPublished);
+        if (Boolean.TRUE.equals(isPublished)) {
+            throw new IllegalArgumentException("Publish actions are handled by admin review");
+        }
+        sticker.setIsPublished(false);
+        sticker.setStatus("PENDING");
+        sticker.setAdminNote(null);
         return stickerRepository.save(sticker);
     }
 }

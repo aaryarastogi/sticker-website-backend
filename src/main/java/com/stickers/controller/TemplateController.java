@@ -23,8 +23,16 @@ public class TemplateController {
     @GetMapping("/categories")
     public ResponseEntity<List<Category>> getCategories() {
         try {
+            // Return published categories, or categories that don't have isPublished set (for backward compatibility)
             List<Category> categories = templateService.getAllCategories();
-            return ResponseEntity.ok(categories);
+            List<Category> publishedCategories = categories.stream()
+                .filter(category -> {
+                    // If isPublished is null (old categories), show them for backward compatibility
+                    // Otherwise, only show if isPublished is true
+                    return category.getIsPublished() == null || category.getIsPublished();
+                })
+                .collect(java.util.stream.Collectors.toList());
+            return ResponseEntity.ok(publishedCategories);
         } catch (Exception e) {
             return ResponseEntity.status(500).build();
         }

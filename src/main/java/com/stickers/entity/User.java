@@ -31,6 +31,12 @@ public class User {
     @Column(nullable = false)
     private String password;
     
+    @Column(name = "is_active")
+    private Boolean isActive = true;
+    
+    @Column(name = "is_admin")
+    private Boolean isAdmin = false;
+    
     @Column(name = "created_at")
     private LocalDateTime createdAt;
     

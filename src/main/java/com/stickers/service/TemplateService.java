@@ -94,9 +94,17 @@ public class TemplateService {
     }
     
     public List<StickerDto> getStickersByTemplate(Integer templateId, String authHeader) {
-        List<Sticker> stickers = stickerRepository.findByTemplateId(templateId);
+        // Only get published template stickers
+        List<Sticker> stickers = stickerRepository.findByTemplateIdAndIsPublishedTrue(templateId);
         Template template = templateRepository.findById(templateId).orElse(null);
         String templateTitle = template != null ? template.getTitle() : null;
+        String resolvedCategoryName = null;
+        if (template != null && template.getCategoryId() != null) {
+            resolvedCategoryName = categoryRepository.findById(template.getCategoryId())
+                .map(Category::getName)
+                .orElse(null);
+        }
+        final String categoryName = resolvedCategoryName;
         
         Integer userId = null;
         if (authHeader != null && authHeader.startsWith("Bearer ")) {
@@ -109,8 +117,10 @@ public class TemplateService {
         }
         
         final Integer finalUserId = userId;
+        List<StickerDto> results = new java.util.ArrayList<>();
         
-        return stickers.stream()
+        stickers.stream()
+            .filter(s -> s.getIsPublished() == null || s.getIsPublished())
             .map(s -> {
                 long likeCount = likeService.getLikeCount(s.getId(), "template");
                 boolean isLiked = finalUserId != null && likeService.isLiked(finalUserId, s.getId(), "template");
@@ -129,7 +139,33 @@ public class TemplateService {
                 dto.setIs_liked(isLiked);
                 return dto;
             })
-            .collect(Collectors.toList());
+            .forEach(results::add);
+        
+        if (categoryName != null && !categoryName.isBlank()) {
+            List<UserCreatedSticker> userStickers = userCreatedStickerRepository
+                .findByCategoryIgnoreCaseAndIsPublishedTrue(categoryName);
+            userStickers.stream()
+                .map(sticker -> {
+                    long likeCount = likeService.getLikeCount(sticker.getId(), "user_created");
+                    boolean isLiked = finalUserId != null && likeService.isLiked(finalUserId, sticker.getId(), "user_created");
+                    StickerDto dto = new StickerDto();
+                    dto.setId(sticker.getId());
+                    dto.setTemplate_id(null);
+                    dto.setName(sticker.getName());
+                    dto.setImage_url(sticker.getImageUrl());
+                    dto.setColors(null);
+                    dto.setFinishes(null);
+                    dto.setPrice(sticker.getPrice());
+                    dto.setTemplate_title(categoryName);
+                    dto.setSticker_type("user_created");
+                    dto.setLike_count(likeCount);
+                    dto.setIs_liked(isLiked);
+                    return dto;
+                })
+                .forEach(results::add);
+        }
+        
+        return results;
     }
     
     public List<StickerDto> getStickersByTemplateTitle(String title, String authHeader) {
@@ -147,8 +183,10 @@ public class TemplateService {
         }
         
         final Integer finalUserId = userId;
+        List<StickerDto> results = new java.util.ArrayList<>();
         
-        return stickers.stream()
+        stickers.stream()
+            .filter(s -> s.getIsPublished() == null || s.getIsPublished())
             .map(s -> {
                 long likeCount = likeService.getLikeCount(s.getId(), "template");
                 boolean isLiked = finalUserId != null && likeService.isLiked(finalUserId, s.getId(), "template");
@@ -167,7 +205,34 @@ public class TemplateService {
                 dto.setIs_liked(isLiked);
                 return dto;
             })
-            .collect(Collectors.toList());
+            .forEach(results::add);
+        
+        if (title != null && !title.isBlank()) {
+            final String categoryForUser = title;
+            List<UserCreatedSticker> userStickers = userCreatedStickerRepository
+                .findByCategoryIgnoreCaseAndIsPublishedTrue(title);
+            userStickers.stream()
+                .map(sticker -> {
+                    long likeCount = likeService.getLikeCount(sticker.getId(), "user_created");
+                    boolean isLiked = finalUserId != null && likeService.isLiked(finalUserId, sticker.getId(), "user_created");
+                    StickerDto dto = new StickerDto();
+                    dto.setId(sticker.getId());
+                    dto.setTemplate_id(null);
+                    dto.setName(sticker.getName());
+                    dto.setImage_url(sticker.getImageUrl());
+                    dto.setColors(null);
+                    dto.setFinishes(null);
+                    dto.setPrice(sticker.getPrice());
+                    dto.setTemplate_title(categoryForUser);
+                    dto.setSticker_type("user_created");
+                    dto.setLike_count(likeCount);
+                    dto.setIs_liked(isLiked);
+                    return dto;
+                })
+                .forEach(results::add);
+        }
+        
+        return results;
     }
     
     public List<Category> getAllCategories() {
@@ -200,6 +265,7 @@ public class TemplateService {
             .collect(Collectors.toMap(Template::getId, t -> t));
         
         return stickers.stream()
+            .filter(s -> s.getIsPublished() == null || s.getIsPublished())
             .map(s -> {
                 Template template = s.getTemplateId() != null ? templateMap.get(s.getTemplateId()) : null;
                 StickerDto dto = new StickerDto();
@@ -279,27 +345,30 @@ public class TemplateService {
             Optional<Sticker> stickerOpt = stickerRepository.findById(stickerId);
             if (stickerOpt.isPresent()) {
                 Sticker sticker = stickerOpt.get();
-                // Get template title
-                String templateTitle = null;
-                if (sticker.getTemplateId() != null) {
-                    Optional<Template> templateOpt = templateRepository.findById(sticker.getTemplateId());
-                    if (templateOpt.isPresent()) {
-                        templateTitle = templateOpt.get().getTitle();
+                // Only include published stickers
+                if (sticker.getIsPublished() == null || sticker.getIsPublished()) {
+                    // Get template title
+                    String templateTitle = null;
+                    if (sticker.getTemplateId() != null) {
+                        Optional<Template> templateOpt = templateRepository.findById(sticker.getTemplateId());
+                        if (templateOpt.isPresent()) {
+                            templateTitle = templateOpt.get().getTitle();
+                        }
                     }
+                    
+                    allStickers.add(new StickerWithLikeInfo(
+                        sticker.getId(),
+                        sticker.getTemplateId(),
+                        sticker.getName(),
+                        sticker.getImageUrl(),
+                        sticker.getColors(),
+                        sticker.getFinishes(),
+                        sticker.getPrice(),
+                        templateTitle,
+                        likeCount,
+                        "template"
+                    ));
                 }
-                
-                allStickers.add(new StickerWithLikeInfo(
-                    sticker.getId(),
-                    sticker.getTemplateId(),
-                    sticker.getName(),
-                    sticker.getImageUrl(),
-                    sticker.getColors(),
-                    sticker.getFinishes(),
-                    sticker.getPrice(),
-                    templateTitle,
-                    likeCount,
-                    "template"
-                ));
             }
         }
         

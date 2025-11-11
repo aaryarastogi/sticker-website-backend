@@ -46,6 +46,13 @@ public class UserCreatedSticker {
     @JsonProperty("is_published")
     private Boolean isPublished = false;
     
+    @Column(name = "status", nullable = false)
+    private String status = "PENDING";
+    
+    @Column(name = "admin_note", columnDefinition = "TEXT")
+    @JsonProperty("admin_note")
+    private String adminNote;
+    
     @Column(name = "created_at")
     @JsonProperty("created_at")
     private LocalDateTime createdAt;

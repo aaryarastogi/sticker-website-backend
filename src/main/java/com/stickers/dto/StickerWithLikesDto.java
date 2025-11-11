@@ -21,6 +21,9 @@ public class StickerWithLikesDto {
     private java.math.BigDecimal price;
     @JsonProperty("is_published")
     private Boolean isPublished;
+    private String status;
+    @JsonProperty("admin_note")
+    private String adminNote;
     @JsonProperty("created_at")
     private String createdAt;
     @JsonProperty("updated_at")
@@ -40,6 +43,8 @@ public class StickerWithLikesDto {
         dto.setSpecifications(sticker.getSpecifications());
         dto.setPrice(sticker.getPrice());
         dto.setIsPublished(sticker.getIsPublished());
+        dto.setStatus(sticker.getStatus());
+        dto.setAdminNote(sticker.getAdminNote());
         dto.setCreatedAt(sticker.getCreatedAt() != null ? sticker.getCreatedAt().toString() : null);
         dto.setUpdatedAt(sticker.getUpdatedAt() != null ? sticker.getUpdatedAt().toString() : null);
         dto.setLikeCount(likeCount != null ? likeCount : 0L);

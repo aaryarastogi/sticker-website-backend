@@ -13,5 +13,6 @@ public interface UserCreatedStickerRepository extends JpaRepository<UserCreatedS
     List<UserCreatedSticker> findByIsPublishedTrue();
     @Query("SELECT ucs FROM UserCreatedSticker ucs WHERE ucs.userId = :userId AND ucs.id = :id")
     UserCreatedSticker findByUserIdAndId(Integer userId, Integer id);
+    List<UserCreatedSticker> findByCategoryIgnoreCaseAndIsPublishedTrue(String category);
 }
 
