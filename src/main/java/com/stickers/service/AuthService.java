@@ -70,6 +70,11 @@ public class AuthService {
             throw new IllegalArgumentException("Invalid email or password");
         }
         
+        // Check if account is active
+        if (user.getIsActive() == null || !user.getIsActive()) {
+            throw new IllegalArgumentException("Your account has been disabled. Please contact support for assistance.");
+        }
+        
         String token = jwtUtil.generateToken(user.getId(), user.getEmail());
         
         AuthResponse.UserDto userDto = new AuthResponse.UserDto(
@@ -91,6 +96,11 @@ public class AuthService {
         Integer userId = jwtUtil.getUserIdFromToken(token);
         User user = userRepository.findById(userId)
             .orElseThrow(() -> new IllegalArgumentException("User not found"));
+        
+        // Check if account is still active
+        if (user.getIsActive() == null || !user.getIsActive()) {
+            throw new IllegalArgumentException("Your account has been disabled. Please contact support for assistance.");
+        }
         
         return new AuthResponse.UserDto(
             user.getId(),

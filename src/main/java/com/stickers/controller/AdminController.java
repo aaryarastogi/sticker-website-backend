@@ -142,8 +142,49 @@ public class AdminController {
             Optional<User> userOpt = userRepository.findById(userId);
             if (userOpt.isPresent()) {
                 User user = userOpt.get();
-                user.setIsActive(request.getIsActive());
+                boolean previousStatus = user.getIsActive() != null ? user.getIsActive() : true;
+                boolean newStatus = request.getIsActive();
+                
+                user.setIsActive(newStatus);
                 user = userRepository.save(user);
+                
+                // Send email notification if status changed
+                String userEmail = user.getEmail();
+                String userName = user.getName() != null ? user.getName() : user.getUsername();
+                
+                if (userEmail != null && !userEmail.isEmpty() && previousStatus != newStatus) {
+                    try {
+                        if (!newStatus) {
+                            // Account was deactivated
+                            emailService.sendAccountDeactivatedEmail(userEmail, userName);
+                            
+                            // Also create a notification
+                            notificationService.createNotification(
+                                user.getId(),
+                                0, // Admin/system action
+                                null,
+                                "account_deactivated",
+                                "Your account has been deactivated by an administrator. Please contact support if you believe this was an error."
+                            );
+                        } else {
+                            // Account was activated/reactivated
+                            emailService.sendAccountActivatedEmail(userEmail, userName);
+                            
+                            // Also create a notification
+                            notificationService.createNotification(
+                                user.getId(),
+                                0, // Admin/system action
+                                null,
+                                "account_activated",
+                                "Your account has been reactivated. You can now log in and access all features."
+                            );
+                        }
+                    } catch (Exception e) {
+                        System.err.println("Failed to send account status change email: " + e.getMessage());
+                        e.printStackTrace();
+                        // Don't fail the request if email fails
+                    }
+                }
                 
                 UserListDto dto = new UserListDto();
                 dto.setId(user.getId());
@@ -163,6 +204,71 @@ public class AdminController {
         } catch (Exception e) {
             e.printStackTrace();
             return ResponseEntity.status(500).build();
+        }
+    }
+    
+    @PostMapping("/users/{userId}/warn")
+    public ResponseEntity<?> warnUser(@PathVariable Integer userId,
+                                     @RequestHeader(value = "Authorization", required = false) String authHeader) {
+        try {
+            Integer adminId = null;
+            if (authHeader != null && authHeader.startsWith("Bearer ")) {
+                try {
+                    String token = authHeader.substring(7);
+                    adminId = jwtUtil.getUserIdFromToken(token);
+                } catch (Exception ignored) {
+                    // Ignore token parsing errors
+                }
+            }
+            
+            Optional<User> userOpt = userRepository.findById(userId);
+            if (!userOpt.isPresent()) {
+                return ResponseEntity.status(404)
+                    .body(Map.of("error", "User not found", "message", "User with ID " + userId + " does not exist."));
+            }
+            
+            User user = userOpt.get();
+            String userEmail = user.getEmail();
+            String userName = user.getName() != null ? user.getName() : user.getUsername();
+            
+            // Create notification for the user
+            String notificationMessage = "You have been warned by an administrator. " +
+                "If you continue with the same activity or violate our guidelines again, your account will be permanently disabled.";
+            
+            try {
+                notificationService.createNotification(
+                    user.getId(),
+                    adminId != null ? adminId : 0,
+                    null, // No sticker ID for user warnings
+                    "user_warning",
+                    notificationMessage
+                );
+            } catch (Exception e) {
+                System.err.println("Failed to create notification: " + e.getMessage());
+                e.printStackTrace();
+            }
+            
+            // Send email notification
+            if (userEmail != null && !userEmail.isEmpty()) {
+                try {
+                    emailService.sendUserWarningEmail(userEmail, userName);
+                } catch (Exception e) {
+                    System.err.println("Failed to send warning email: " + e.getMessage());
+                    e.printStackTrace();
+                    // Don't fail the request if email fails
+                }
+            }
+            
+            return ResponseEntity.ok(Map.of(
+                "message", "User warned successfully",
+                "userId", userId,
+                "userName", userName,
+                "emailSent", userEmail != null && !userEmail.isEmpty()
+            ));
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.status(500)
+                .body(Map.of("error", "Failed to warn user", "message", e.getMessage()));
         }
     }
     
@@ -408,6 +514,31 @@ public class AdminController {
                     "APPROVED".equalsIgnoreCase(sticker.getStatus()) ? "sticker_approved" : "sticker_rejected",
                     message
                 );
+                
+                // Send email notification if sticker is rejected
+                if ("REJECTED".equalsIgnoreCase(normalizedStatus)) {
+                    Optional<User> userOpt = userRepository.findById(sticker.getUserId());
+                    if (userOpt.isPresent()) {
+                        User user = userOpt.get();
+                        String userEmail = user.getEmail();
+                        String userName = user.getName() != null ? user.getName() : user.getUsername();
+                        
+                        if (userEmail != null && !userEmail.isEmpty()) {
+                            try {
+                                emailService.sendStickerRejectedEmail(
+                                    userEmail,
+                                    userName,
+                                    sticker.getName(),
+                                    request.getNote()
+                                );
+                            } catch (Exception e) {
+                                System.err.println("Failed to send rejection email: " + e.getMessage());
+                                e.printStackTrace();
+                                // Don't fail the request if email fails
+                            }
+                        }
+                    }
+                }
             }
             
             // Build response DTO
@@ -907,9 +1038,13 @@ public class AdminController {
                 }
             }
             
-            // Update image URL if provided
+            // Update image URL if provided (can be null to remove image)
             if (request.containsKey("imageUrl")) {
-                category.setImageUrl((String) request.get("imageUrl"));
+                Object imageUrlObj = request.get("imageUrl");
+                String imageUrl = imageUrlObj != null && !imageUrlObj.toString().trim().isEmpty() 
+                    ? imageUrlObj.toString().trim() 
+                    : null;
+                category.setImageUrl(imageUrl);
             }
             
             // Update published status if provided
