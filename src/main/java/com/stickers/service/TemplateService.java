@@ -297,6 +297,10 @@ public class TemplateService {
             .collect(Collectors.toList());
     }
     
+    public List<Category> searchCategories(String query) {
+        return categoryRepository.searchByName(query);
+    }
+    
     public List<StickerDto> getTrendingStickers(String authHeader) {
         // Get top liked stickers from both template and user_created types
         List<Object[]> topTemplateStickersData = likeRepository.findTopStickersByLikes(10, "template");

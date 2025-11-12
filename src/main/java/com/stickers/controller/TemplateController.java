@@ -46,17 +46,20 @@ public class TemplateController {
                 empty.put("stickers", List.of());
                 empty.put("templates", List.of());
                 empty.put("users", List.of());
+                empty.put("categories", List.of());
                 return ResponseEntity.ok(empty);
             }
             
             List<StickerDto> stickers = templateService.searchStickers(q);
             List<TemplateDto> templates = templateService.searchTemplates(q);
             List<com.stickers.dto.UserSearchDto> users = templateService.searchUsers(q);
+            List<Category> categories = templateService.searchCategories(q);
             
             Map<String, Object> result = new HashMap<>();
             result.put("stickers", stickers);
             result.put("templates", templates);
             result.put("users", users);
+            result.put("categories", categories);
             
             return ResponseEntity.ok(result);
         } catch (Exception e) {
