@@ -29,6 +29,7 @@ public class CustomStickerService {
         sticker.setImageUrl(request.getImage_url());
         sticker.setSpecifications(request.getSpecifications());
         sticker.setPrice(request.getPrice() != null ? request.getPrice() : java.math.BigDecimal.ZERO);
+        sticker.setCurrency(request.getCurrency() != null ? request.getCurrency() : "USD"); // Store currency or default to USD
         sticker.setIsPublished(false);
         sticker.setStatus("PENDING");
         sticker.setAdminNote(null);

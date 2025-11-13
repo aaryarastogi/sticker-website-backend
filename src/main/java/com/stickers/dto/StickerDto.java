@@ -17,6 +17,7 @@ public class StickerDto {
     private List<String> colors;
     private List<String> finishes;
     private BigDecimal price;
+    private String currency; // Currency code (USD, INR, etc.)
     private String template_title;
     private String sticker_type; // "template" or "user_created"
     private Long like_count;

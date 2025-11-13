@@ -12,6 +12,7 @@ public class CustomStickerRequest {
     private String image_url;
     private JsonNode specifications;
     private BigDecimal price;
+    private String currency;
     private Boolean is_published;
 }
 

@@ -15,6 +15,7 @@ public class AdminStickerDto {
     private String imageUrl;
     private String category;
     private BigDecimal price;
+    private String currency; // Currency code (USD, INR, etc.)
     private String creatorType; // "stickkery" or "user"
     private String creatorName; // "Stickkery" or user's name
     private Integer creatorId; // null for Stickkery, userId for user-created

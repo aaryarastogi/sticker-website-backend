@@ -14,10 +14,15 @@ import com.stickers.repository.StickerRepository;
 import com.stickers.repository.TemplateRepository;
 import com.stickers.repository.CategoryRepository;
 import com.stickers.repository.StickerLikeRepository;
+import com.stickers.repository.OrderRepository;
 import com.stickers.dto.ReviewStickerRequest;
+import com.stickers.dto.AdminOrderDto;
+import com.stickers.entity.Order;
 import com.stickers.service.CustomStickerService;
 import com.stickers.service.NotificationService;
 import com.stickers.util.JwtUtil;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.stickers.entity.Template;
 import com.stickers.entity.Category;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -53,6 +58,9 @@ public class AdminController {
     
     @Autowired
     private StickerLikeRepository stickerLikeRepository;
+    
+    @Autowired
+    private OrderRepository orderRepository;
     
     @Autowired
     private CustomStickerService customStickerService;
@@ -305,6 +313,7 @@ public class AdminController {
                 dto.setCategory(categoryName);
                 
                 dto.setPrice(sticker.getPrice());
+                dto.setCurrency(sticker.getCurrency() != null ? sticker.getCurrency() : "USD");
                 dto.setCreatorType("stickkery");
                 dto.setCreatorName("Stickkery");
                 dto.setCreatorId(null);
@@ -326,6 +335,32 @@ public class AdminController {
                 dto.setImageUrl(sticker.getImageUrl());
                 dto.setCategory(sticker.getCategory());
                 dto.setPrice(sticker.getPrice());
+                // Get currency - if null, try to get from order data
+                String storedCurrency = sticker.getCurrency();
+                if (storedCurrency == null || storedCurrency.trim().isEmpty()) {
+                    // Try to get currency from the order if available
+                    // Find orders for this user with CUSTOM_STICKER type around the sticker creation time
+                    try {
+                        List<Order> userOrders = orderRepository.findByUserIdOrderByCreatedAtDesc(sticker.getUserId());
+                        for (Order order : userOrders) {
+                            if ("CUSTOM_STICKER".equals(order.getOrderType()) && 
+                                order.getCreatedAt() != null && 
+                                sticker.getCreatedAt() != null &&
+                                Math.abs(java.time.Duration.between(order.getCreatedAt(), sticker.getCreatedAt()).toMinutes()) < 5) {
+                                // Found a matching order within 5 minutes of sticker creation
+                                storedCurrency = order.getCurrency();
+                                break;
+                            }
+                        }
+                    } catch (Exception e) {
+                        // If order lookup fails, continue with default
+                    }
+                    // If still null, default to USD
+                    if (storedCurrency == null || storedCurrency.trim().isEmpty()) {
+                        storedCurrency = "USD";
+                    }
+                }
+                dto.setCurrency(storedCurrency);
                 dto.setCreatorType("user");
                 
                 // Get user information
@@ -424,6 +459,9 @@ public class AdminController {
             sticker.setName(request.getName().trim());
             sticker.setImageUrl(request.getImageUrl().trim());
             sticker.setPrice(request.getPrice() != null ? request.getPrice() : java.math.BigDecimal.ZERO);
+            sticker.setCurrency(request.getCurrency() != null && !request.getCurrency().trim().isEmpty() 
+                ? request.getCurrency().trim().toUpperCase() 
+                : "USD");
             sticker.setTemplateId(templateId);
             sticker.setIsPublished(true); // Admin-created stickers are published by default
             
@@ -454,6 +492,7 @@ public class AdminController {
             dto.setImageUrl(sticker.getImageUrl());
             dto.setCategory(finalCategoryName);
             dto.setPrice(sticker.getPrice());
+            dto.setCurrency(sticker.getCurrency() != null ? sticker.getCurrency() : "USD");
             dto.setCreatorType("stickkery");
             dto.setCreatorName("Stickkery");
             dto.setCreatorId(null);
@@ -548,6 +587,7 @@ public class AdminController {
             dto.setImageUrl(sticker.getImageUrl());
             dto.setCategory(sticker.getCategory());
             dto.setPrice(sticker.getPrice());
+            dto.setCurrency(sticker.getCurrency() != null ? sticker.getCurrency() : "USD");
             dto.setCreatorType("user");
             Optional<User> stickerOwner = userRepository.findById(sticker.getUserId());
             dto.setCreatorName(stickerOwner.map(user -> user.getName() != null ? user.getName() : user.getUsername()).orElse("Unknown User"));
@@ -651,6 +691,9 @@ public class AdminController {
                 sticker.setName(request.getName().trim());
                 sticker.setImageUrl(request.getImageUrl().trim());
                 sticker.setPrice(request.getPrice() != null ? request.getPrice() : java.math.BigDecimal.ZERO);
+                if (request.getCurrency() != null && !request.getCurrency().trim().isEmpty()) {
+                    sticker.setCurrency(request.getCurrency().trim().toUpperCase());
+                }
                 if (templateId != null) {
                     sticker.setTemplateId(templateId);
                 }
@@ -682,6 +725,7 @@ public class AdminController {
                 dto.setImageUrl(sticker.getImageUrl());
                 dto.setCategory(finalCategoryName);
                 dto.setPrice(sticker.getPrice());
+                dto.setCurrency(sticker.getCurrency() != null ? sticker.getCurrency() : "USD");
                 dto.setCreatorType("stickkery");
                 dto.setCreatorName("Stickkery");
                 dto.setCreatorId(null);
@@ -740,6 +784,7 @@ public class AdminController {
                 dto.setImageUrl(sticker.getImageUrl());
                 dto.setCategory(categoryName);
                 dto.setPrice(sticker.getPrice());
+                dto.setCurrency(sticker.getCurrency() != null ? sticker.getCurrency() : "USD");
                 dto.setCreatorType("stickkery");
                 dto.setCreatorName("Stickkery");
                 dto.setCreatorId(null);
@@ -809,6 +854,7 @@ public class AdminController {
                     dto.setImageUrl(sticker.getImageUrl());
                     dto.setCategory(sticker.getCategory());
                     dto.setPrice(sticker.getPrice());
+                    dto.setCurrency(sticker.getCurrency() != null ? sticker.getCurrency() : "USD");
                     dto.setCreatorType("user");
                     dto.setCreatorName(creatorName);
                     dto.setCreatorId(sticker.getUserId());
@@ -868,6 +914,7 @@ public class AdminController {
                 dto.setImageUrl(sticker.getImageUrl());
                 dto.setCategory(categoryName);
                 dto.setPrice(sticker.getPrice());
+                dto.setCurrency(sticker.getCurrency() != null ? sticker.getCurrency() : "USD");
                 dto.setCreatorType("stickkery");
                 dto.setCreatorName("Stickkery");
                 dto.setCreatorId(null);
@@ -907,6 +954,7 @@ public class AdminController {
                     dto.setImageUrl(sticker.getImageUrl());
                     dto.setCategory(sticker.getCategory());
                     dto.setPrice(sticker.getPrice());
+                    dto.setCurrency(sticker.getCurrency() != null ? sticker.getCurrency() : "USD");
                     dto.setCreatorType("user");
                     dto.setCreatorName(creatorName);
                     dto.setCreatorId(sticker.getUserId());
@@ -1196,6 +1244,67 @@ public class AdminController {
             e.printStackTrace();
             return ResponseEntity.status(500)
                 .body(Map.of("error", "Failed to delete unused categories", "message", e.getMessage()));
+        }
+    }
+    
+    @GetMapping("/orders")
+    public ResponseEntity<?> getAllOrders() {
+        try {
+            List<Order> orders = orderRepository.findAll();
+            // Sort by created date descending
+            orders.sort((a, b) -> {
+                if (a.getCreatedAt() == null && b.getCreatedAt() == null) return 0;
+                if (a.getCreatedAt() == null) return 1;
+                if (b.getCreatedAt() == null) return -1;
+                return b.getCreatedAt().compareTo(a.getCreatedAt());
+            });
+            List<AdminOrderDto> orderDtos = orders.stream().map(order -> {
+                AdminOrderDto dto = new AdminOrderDto();
+                dto.setId(order.getId());
+                dto.setOrderNumber(order.getOrderNumber());
+                dto.setRazorpayOrderId(order.getRazorpayOrderId());
+                dto.setRazorpayPaymentId(order.getRazorpayPaymentId());
+                dto.setUserId(order.getUserId());
+                dto.setAmount(order.getAmount());
+                dto.setCurrency(order.getCurrency());
+                dto.setStatus(order.getStatus());
+                dto.setOrderType(order.getOrderType());
+                dto.setCreatedAt(order.getCreatedAt() != null ? order.getCreatedAt().toString() : null);
+                dto.setPaidAt(order.getPaidAt() != null ? order.getPaidAt().toString() : null);
+                
+                // Get user information
+                Optional<User> userOpt = userRepository.findById(order.getUserId());
+                if (userOpt.isPresent()) {
+                    User user = userOpt.get();
+                    dto.setUserName(user.getName());
+                    dto.setUserEmail(user.getEmail());
+                }
+                
+                // Parse order data to get item count
+                try {
+                    if (order.getOrderData() != null && !order.getOrderData().isEmpty()) {
+                        ObjectMapper mapper = new ObjectMapper();
+                        List<Map<String, Object>> orderItems = mapper.readValue(
+                            order.getOrderData(), 
+                            new TypeReference<List<Map<String, Object>>>() {}
+                        );
+                        dto.setOrderData(orderItems);
+                        dto.setItemCount(orderItems.size());
+                    } else {
+                        dto.setItemCount(0);
+                    }
+                } catch (Exception e) {
+                    dto.setItemCount(0);
+                }
+                
+                return dto;
+            }).collect(Collectors.toList());
+            
+            return ResponseEntity.ok(orderDtos);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.status(500)
+                .body(Map.of("error", "Failed to fetch orders", "message", e.getMessage()));
         }
     }
 }

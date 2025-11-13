@@ -42,6 +42,9 @@ public class UserCreatedSticker {
     @Column(columnDefinition = "DECIMAL(10, 2)")
     private BigDecimal price;
     
+    @Column(name = "currency", length = 3)
+    private String currency = "USD"; // Default to USD for backward compatibility
+    
     @Column(name = "is_published")
     @JsonProperty("is_published")
     private Boolean isPublished = false;

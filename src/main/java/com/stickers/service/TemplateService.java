@@ -133,6 +133,7 @@ public class TemplateService {
                 dto.setColors(s.getColors());
                 dto.setFinishes(s.getFinishes());
                 dto.setPrice(s.getPrice());
+                dto.setCurrency(s.getCurrency() != null ? s.getCurrency() : "USD");
                 dto.setTemplate_title(templateTitle);
                 dto.setSticker_type("template");
                 dto.setLike_count(likeCount);
@@ -156,6 +157,7 @@ public class TemplateService {
                     dto.setColors(null);
                     dto.setFinishes(null);
                     dto.setPrice(sticker.getPrice());
+                    dto.setCurrency(sticker.getCurrency() != null ? sticker.getCurrency() : "USD");
                     dto.setTemplate_title(categoryName);
                     dto.setSticker_type("user_created");
                     dto.setLike_count(likeCount);
@@ -199,6 +201,7 @@ public class TemplateService {
                 dto.setColors(s.getColors());
                 dto.setFinishes(s.getFinishes());
                 dto.setPrice(s.getPrice());
+                dto.setCurrency(s.getCurrency() != null ? s.getCurrency() : "USD");
                 dto.setTemplate_title(templateTitle);
                 dto.setSticker_type("template");
                 dto.setLike_count(likeCount);
@@ -368,6 +371,7 @@ public class TemplateService {
                         sticker.getColors(),
                         sticker.getFinishes(),
                         sticker.getPrice(),
+                        sticker.getCurrency() != null ? sticker.getCurrency() : "USD",
                         templateTitle,
                         likeCount,
                         "template"
@@ -414,6 +418,7 @@ public class TemplateService {
                         null, // colors
                         null, // finishes
                         sticker.getPrice(),
+                        sticker.getCurrency() != null ? sticker.getCurrency() : "USD",
                         sticker.getCategory(), // templateTitle
                         likeCount,
                         "user_created"
@@ -448,6 +453,7 @@ public class TemplateService {
                 dto.setColors(info.colors);
                 dto.setFinishes(info.finishes);
                 dto.setPrice(info.price);
+                dto.setCurrency(info.currency != null ? info.currency : "USD");
                 dto.setTemplate_title(info.templateTitle);
                 dto.setSticker_type(info.type); // Set sticker type
                 dto.setLike_count(info.likeCount);
@@ -466,13 +472,14 @@ public class TemplateService {
         List<String> colors;
         List<String> finishes;
         java.math.BigDecimal price;
+        String currency;
         String templateTitle;
         Long likeCount;
         String type;
         
         StickerWithLikeInfo(Integer id, Integer templateId, String name, String imageUrl,
                            List<String> colors, List<String> finishes, java.math.BigDecimal price,
-                           String templateTitle, Long likeCount, String type) {
+                           String currency, String templateTitle, Long likeCount, String type) {
             this.id = id;
             this.templateId = templateId;
             this.name = name;
@@ -480,6 +487,7 @@ public class TemplateService {
             this.colors = colors;
             this.finishes = finishes;
             this.price = price;
+            this.currency = currency;
             this.templateTitle = templateTitle;
             this.likeCount = likeCount;
             this.type = type;
